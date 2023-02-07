@@ -99,147 +99,126 @@ Each of the following case study questions can be answered using a single SQL st
    1. What is the total amount each customer spent at the restaurant?
    
    ```bash
-SELECT s.customer_id,
-       Sum(m.price) AS Amount_spent
-FROM   sales AS s
-       JOIN menu m
-         ON s.product_id = m.product_id
-GROUP  BY s.customer_id; 
+SELECT S.[Customer ID], Sum([Price]) AS TotalAmountSpent
+FROM  [dbo].[SALES]  AS S
+JOIN [dbo].[MENU] as M
+ON S.[Product ID] = M.[Product ID]
+GROUP  BY [Customer ID] 
 ```
   2. How many days has each customer visited the restaurant?
    
 ```bash
-SELECT customer_id,
-       Count(DISTINCT order_date) AS No_of_days_visited
-FROM   sales
-GROUP  BY customer_id; 
+SELECT [Customer ID], COUNT(DISTINCT[Order Date]) as Days_Visited
+FROM [dbo].[SALES]
+GROUP BY [Customer ID]
+ORDER BY Days_Visited DESC
 ```
    
   3. What was the first item from the menu purchased by each customer?
    
 ```bash
-SELECT customer_id,
-       product_name
-FROM   (SELECT s.customer_id,
-               m.product_name,
-               s.order_date,
-               Dense_rank()
-                 OVER(
-                   partition BY s.customer_id
-                   ORDER BY s.order_date) AS rnk
-        FROM   sales s
-               INNER JOIN menu m
-                       ON s.product_id = m.product_id
-        GROUP  BY customer_id,
-                  product_name,
-                  order_date) t
-WHERE  rnk = 1; 
+SELECT [Order Date] ,[Customer ID],[Product Name]      
+FROM   (SELECT S.[Customer ID],S.[Order Date], MN.[Product Name],
+DENSE_RANK()
+OVER( PARTITION BY S.[Customer ID]
+ORDER BY S.[Order Date]) AS menu_rank
+        FROM   [dbo].[SALES] AS S
+               INNER JOIN [dbo].[MENU] AS MN
+                       ON S.[Product ID] =MN.[Product ID] 
+        GROUP  BY [Customer ID],[Product Name],[Order Date]) t
+WHERE menu_rank = 1; 
 ```
    
   4. What is the most purchased item on the menu and how many times was it purchased by all customers?
    
 ```bash
-SELECT m.product_name,
-       Count(s.product_id) AS No_of_purchase
-FROM   sales s
-       JOIN menu m
-         ON s.product_id = m.product_id
-GROUP  BY 1
-ORDER  BY 2 DESC
-LIMIT  1; 
+ SELECT MN.[Product Name], COUNT(S.[Product ID]) AS CountOfPurchase
+FROM [dbo].[MENU] AS MN
+LEFT JOIN [dbo].[SALES] AS S
+ON MN.[Product ID] = S.[Product ID]
+GROUP BY [Product Name]
+ORDER BY CountOfPurchase DESC 
 ```
    
   5. Which item was the most popular for each customer?
    
 ```bash
-WITH t
-     AS (SELECT s.customer_id,
-                m.product_name,
-                Count(s.product_id) AS order_count,
-                Rank()
-                  OVER(
-                    partition BY s.customer_id
-                    ORDER BY Count(s.product_id) DESC) AS rnk
-         FROM   sales s
-                INNER JOIN menu m
-                        ON s.product_id = m.product_id
-         GROUP  BY product_name,
-                   customer_id)
-SELECT customer_id,
-       product_name,
-       order_count
-FROM   t
-WHERE  rnk = 1; 
+WITH NEW AS (
+SELECT S.[Customer ID],MN.[Product Name], COUNT(S.[Product ID]) AS CountOfOrders,
+RANK ()
+OVER( PARTITION BY S.[Customer ID]
+ORDER BY COUNT(S.[Product ID]) DESC) AS RankOfOrders
+FROM  [dbo].[SALES] AS S
+JOIN [dbo].[MENU] AS MN
+ON S.[Product ID]= MN.[Product ID]
+GROUP BY [Customer ID],[Product Name])
+
+SELECT [Customer ID],[Product Name],CountOfOrders,RankOfOrders
+FROM NEW
+WHERE  RankOfOrders = 1
 ```
     
    6. Which item was purchased first by the customer after they became a member?
    
 ```bash
-SELECT t.customer_id,
-       t.product_name
-FROM   (SELECT s.customer_id,
-               s.order_date,
-               m.product_name
-        FROM   sales s
-               JOIN menu m
-                 ON s.product_id = m.product_id) t
-       JOIN members b
-         ON t.customer_id = b.customer_id
-WHERE  t.order_date >= b.join_date
-GROUP  BY 1
-ORDER  BY 1; 
+SELECT NEW.[Customer ID],NEW.[Product Name]
+FROM (SELECT S.[Customer ID],S.[Order Date],MN.[Product Name]
+FROM [dbo].[SALES]AS S
+JOIN [dbo].[MENU]AS MN
+ON S.[Product ID] = MN.[Product ID]) NEW
+JOIN [dbo].[MEMBERS] AS MB
+ON NEW.[Customer ID] = MB.[Customer ID]
+WHERE NEW.[Order Date] >= MB.[Join Date]
 ```
    
   7. Which item was purchased just before the customer became a member?
    
 ```bash
-WITH t
-     AS (SELECT s.customer_id,
-                m.product_name,
-                Dense_rank()
-                  OVER (
-                    partition BY s.customer_id
-                    ORDER BY s.order_date) AS rnk
-         FROM   sales s
-                JOIN menu m
-                  ON s.product_id = m.product_id
-                JOIN members mb
-                  ON mb.customer_id = s.customer_id
-         WHERE  s.order_date < mb.join_date)
-SELECT customer_id,
-       product_name
-FROM   t
-WHERE  rnk = 1;
+WITH NM AS (
+SELECT S.[Customer ID],MN.[Product Name],
+DENSE_RANK()
+OVER( PARTITION BY S.[Customer ID]
+ORDER BY S.[Order Date]) AS RankOfOrder
+FROM [dbo].[SALES] AS S
+JOIN [dbo].[MENU] AS MN
+ON S.[Product ID] = MN.[Product ID]
+JOIN [dbo].[MEMBERS] AS MB
+ON S.[Customer ID] = MB.[Customer ID] 
+WHERE S.[Order Date] <MB.[Join Date])
+SELECT [Customer ID],[Product Name],RankOfOrder
+FROM NM
+WHERE RankOfOrder = 1
 ```
    
   8. What is the total items and amount spent for each member before they became a member?
    
 ```bash
-SELECT s.customer_id,
-       Count(s.product_id) AS no_of_products,
-       Sum(m.price)        AS amount_spent
-FROM   sales s
-       JOIN menu m
-         ON s.product_id = m.product_id
-       JOIN members mb
-         ON mb.customer_id = s.customer_id
-WHERE  s.order_date < mb.join_date
-GROUP  BY s.customer_id
-ORDER  BY s.customer_id; 
+SELECT S.[Customer ID], COUNT(S.[Product ID]) AS ProductCount,SUM(MN.[Price]) AS TotalAmount
+FROM [dbo].[SALES] AS S
+JOIN [dbo].[MENU] AS MN
+ON S.[Product ID] = MN.[Product ID]
+JOIN [dbo].[MEMBERS] AS MB
+ON S.[Customer ID] = MB.[Customer ID]
+WHERE S.[Order Date] < MB.[Join Date]
+GROUP BY S.[Customer ID]
+ORDER BY S.[Customer ID] ASC
 ```
    
   9. If each $1 spent equates to 10 points and sushi has a 2x points multiplier - how many points would each customer have?
    
 ```bash
-SELECT s.customer_id,
-       Sum(CASE
-             WHEN m.product_name = 'sushi' THEN m.price * 2 * 10
-             ELSE m.price * 10
-           END) AS total_points
-FROM   sales s
-       JOIN menu m
-         ON s.product_id = m.product_id
-GROUP  BY s.customer_id; 
+SELECT S.[Customer ID],MN.[Product Name],
+SUM(
+CASE
+WHEN MN.[Product Name] = 'SUSHI'
+THEN MN.[Price] *20
+ELSE MN.[Price] * 10
+END)
+AS ProductPoints
+FROM [dbo].[SALES] AS S
+JOIN [dbo].[MENU] AS MN
+ON S.[Product ID] = MN.[Product ID]
+GROUP BY S.[Customer ID], MN.[Product Name]
 ```
    
  10. In the first week after a customer joins the program (including their join date) they earn 2x points on all items, not just sushi - how many points do customer A and B have at the end of January?
@@ -267,19 +246,17 @@ GROUP  BY s.customer_id;
   11. Use the available data to create a comprehensive data using the Join function.
    
 ```bash
-SELECT s.customer_id,
-       s.order_date,
-       m.product_name,
-       m.price,
-       ( CASE
-           WHEN s.order_date >= mb.join_date THEN 'Y'
-           ELSE 'N'
-         END ) AS member
-FROM   sales s
-       LEFT JOIN menu m
-              ON s.product_id = m.product_id
-       LEFT JOIN members mb
-              ON mb.customer_id = s.customer_id; 
+SELECT S.[Customer ID],S.[Order Date],MN.[Product Name],MN.[Price]
+(CASE
+WHEN S.[Order Date] >= MB.[Join Date] THEN 'JOINED'
+ELSE 'NOT JOINED'
+END)
+AS JoinStatus
+FROM [dbo].[SALES] AS S
+JOIN [dbo].[MENU] AS MN
+ON S.[Product ID] = MN.[Product ID]
+JOIN [dbo].[MEMBERS] AS MB
+ON S.[Customer ID] = MB.[Customer ID]
 ```
 
   12. Danny also requires further information about the ranking of customer products, but he purposely does not need the ranking for non-member purchases so he expects null ranking values for the records when customers are not yet part of the loyalty program.
