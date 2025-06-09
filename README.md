@@ -6,7 +6,8 @@ This Project explores a historical Olympics dataset using SQL to uncover trends 
 
 ## :bookmark_tabs: Table of Contents
 - 🛠️ Problem Statement
-- 📂 Dataset
+- 📊 Dataset
+- 🧠 Tools & Skills
 - 📙 Case Study Questions
 - 🏆 Solutions
 
@@ -18,11 +19,19 @@ The goal of this project is to analyse a comprehensive Olympics Dataset using SQ
 By Using SQL to extract, filter, group and aggregate data, this project aims to provide clear, data-driven insights into Olympic history, highlight dominant nations and athletes and identify trends that may inform fuy=uture analyses or predictions.
 
 
-## :open_file_folder: Dataset
-
+## 📊 Dataset
+The analyses is based on the [Olympics History Dataset](https://www.kaggle.com/datasets/satishgunjal/olympics-history-dataset) available on Kaggle
 
 </p>
 </details>
+
+
+##  🧠 Tools & Skills
+- SQL (for querying and analysis)
+- Data Cleaning
+- Aggregation & Joins
+- CTEs and Subqueries
+- Window Functions
 
 ## :closed_book: Case Study Questions
 Each of the following case study questions can be answered using a single SQL statement:
@@ -250,6 +259,10 @@ THEN 1 ELSE 0 END) >0
 ```
   </p>
 </details>
+
+------------
+
+
 
 
 ## Danny's Diner Data Analysis
