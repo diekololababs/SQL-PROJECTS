@@ -262,10 +262,10 @@ THEN 1 ELSE 0 END) >0
 
 ------------
 
+-----------
 
 
-
-## Danny's Diner Data Analysis
+  ## Danny's Diner Data Analysis
 
 ![Case 1 pix](https://user-images.githubusercontent.com/123111536/213601909-8a1c9873-c037-4884-aea6-664680608cc2.png)
 
