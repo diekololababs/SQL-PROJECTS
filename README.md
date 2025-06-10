@@ -125,6 +125,25 @@ FROM [dbo].[athlete_events$]
 GROUP BY [Team]
 HAVING COUNT (DISTINCT [Games]) =
 	(SELECT  COUNT (DISTINCT [Games]) FROM [dbo].[athlete_events$])
+
+--IF NO NATION PARTICIPATED--
+IF EXISTS (
+SELECT [Team]
+FROM [dbo].[athlete_events$]
+GROUP BY [Team]
+HAVING COUNT (DISTINCT [Games]) =
+	(SELECT  COUNT (DISTINCT [Games]) FROM [dbo].[athlete_events$])
+	)
+BEGIN
+	SELECT [Team]
+	FROM [dbo].[athlete_events$]
+	GROUP BY [Team]
+	HAVING COUNT(DISTINCT [Games])=(SELECT COUNT(DISTINCT [Games]) FROM [dbo].[athlete_events$])
+END
+ELSE
+BEGIN
+	SELECT 'NO NATION PARTICIPATED IN ALL GAMES' AS Result
+END
 ```
     
    6. The sport which was played in all summer olympics
