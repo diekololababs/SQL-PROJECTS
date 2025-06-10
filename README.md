@@ -51,8 +51,8 @@ Each of the following case study questions can be answered using a single SQL st
   11. Fetch the top 5 athletes who have won the most gold medals.
   12. Fetch the top 5 athletes who have won the most medals (gold/silver/bronze).
   13. Fetch the top 5 most successful countries in olympics. Success is defined by no of medals won.
-  14.  List down total gold, silver and broze medals won by each country
-  15.  List down total gold, silver and broze medals won by each country corresponding to each olympic games.
+  14.  List down total gold, silver and bronze medals won by each country
+  15.  List down total gold, silver and bronze medals won by each country corresponding to each olympic games.
   16. 	Which countries have never won gold medal but have won silver/bronze medals?
 
 </p>
@@ -151,10 +151,29 @@ END
 ```bash
 SELECT distinct([Sport])
 FROM [dbo].[athlete_events$]
-where [Season] = 'Summer'
+WHERE [Season] = 'Summer'
 GROUP BY [Sport]
-having count(distinct Games) = (select count(distinct Games)
-								from [dbo].[athlete_events$])
+HAVING COUNT(DISTINCT Games) = (SELECT COUNT(DISTINCT Games)
+								FROM [dbo].[athlete_events$])
+
+--IF NO SPORT WAS PLAYED IN ALL SUMMER OLYMPICS--
+IF EXISTS (
+SELECT DISTINCT ([Sport])
+FROM [dbo].[athlete_events$]
+WHERE [Season] = 'Summer'
+GROUP BY [Sport]
+HAVING COUNT(DISTINCT Games) = (SELECT COUNT(DISTINCT Games)
+								FROM [dbo].[athlete_events$]))
+BEGIN
+	SELECT [Sport]
+	FROM [dbo].[athlete_events$]
+	GROUP BY [Sport]
+	HAVING COUNT(DISTINCT [Games])=(SELECT COUNT(DISTINCT [Games]) FROM [dbo].[athlete_events$])
+END
+ELSE
+BEGIN
+	SELECT 'NO SPORT WAS PLAYED IN ALL SUMMER OLYMPICS' AS Result
+END
 ```
    
   7. Which Sports were just played only once in the olympics?
@@ -228,24 +247,16 @@ ORDER BY MedalCount DESC
   14. Total gold, silver and bronze medals won by each country
    
 ```bash
-SELECT DISTINCT[Team],[Medal], COUNT([Medal]) AS TotalMedal
-FROM [dbo].[athlete_events$]
-WHERE [Medal] <> 'NA'
-GROUP BY [Medal],[Team]
-ORDER BY TotalMedal DESC
---OR--
 SELECT [Team],
 SUM(CASE WHEN [Medal]='Gold'
 THEN 1 ELSE 0 END) AS GOLD,
 SUM(CASE WHEN [Medal]='Silver'
 THEN 1 ELSE 0 END) AS SILVER,
 SUM(CASE WHEN [Medal]='Bronze'
-THEN 1 ELSE 0 END) AS BRONZE,
-COUNT(CASE WHEN [Medal] <> 'NA' THEN 1 ELSE 0 END) AS MedalCount
+THEN 1 ELSE 0 END) AS BRONZE
 FROM [dbo].[athlete_events$]
 GROUP BY [Team]
 ORDER BY GOLD DESC, SILVER DESC, BRONZE DESC
-
 ```
  15. Total gold, silver and broze medals won by each country corresponding to each olympic games
      
@@ -256,8 +267,7 @@ THEN 1 ELSE 0 END) AS GOLD,
 SUM(CASE WHEN [Medal]='Silver'
 THEN 1 ELSE 0 END) AS SILVER,
 SUM(CASE WHEN [Medal]='Bronze'
-THEN 1 ELSE 0 END) AS BRONZE,
-COUNT(CASE WHEN [Medal] <> 'NA' THEN 1 ELSE 0 END) AS MedalCount
+THEN 1 ELSE 0 END) AS BRONZE
 FROM [dbo].[athlete_events$]
 GROUP BY [Team],[Games]
 ORDER BY GOLD DESC, SILVER DESC, BRONZE DESC
